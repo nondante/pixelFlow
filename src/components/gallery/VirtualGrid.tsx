@@ -39,7 +39,7 @@ export function VirtualGrid({ photos, onPhotoClick }: VirtualGridProps) {
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
       }}
     >
-      {photos.map((photo) => (
+      {photos.map((photo, index) => (
         <div
           key={photo.id}
           className="relative"
@@ -47,7 +47,7 @@ export function VirtualGrid({ photos, onPhotoClick }: VirtualGridProps) {
             aspectRatio: '1 / 1', // Fixed square aspect ratio for uniform grid
           }}
         >
-          <ImageCard photo={photo} onClick={onPhotoClick} />
+          <ImageCard photo={photo} onClick={onPhotoClick} index={index} />
         </div>
       ))}
     </div>

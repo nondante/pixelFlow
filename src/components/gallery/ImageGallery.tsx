@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useGalleryStore } from '@/store/galleryStore';
+import { useFavoritesStore } from '@/store/favoritesStore';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { MasonryGrid } from './MasonryGrid';
 import { VirtualGrid } from './VirtualGrid';
 import { JustifiedLayout } from './JustifiedLayout';
 import { ImageSkeleton } from './ImageSkeleton';
+import { requestCache, createCacheKey } from '@/utils/requestCache';
 
 export function ImageGallery() {
   const {
@@ -18,6 +20,7 @@ export function ImageGallery() {
     page,
     searchQuery,
     filters,
+    showFavoritesOnly,
     addPhotos,
     setLoading,
     setError,
@@ -26,36 +29,55 @@ export function ImageGallery() {
     setSelectedPhoto,
   } = useGalleryStore();
 
+  const { favorites } = useFavoritesStore();
+
+  // Determine which photos to display
+  const displayPhotos = useMemo(() => {
+    return showFavoritesOnly ? favorites : photos;
+  }, [showFavoritesOnly, favorites, photos]);
+
   // Fetch photos from API
   const fetchPhotos = useCallback(async () => {
-    if (isLoading || !hasMore) return;
+    // Skip API calls if showing favorites
+    if (showFavoritesOnly || isLoading || !hasMore) return;
 
     setLoading(true);
     setError(null);
 
     try {
       let url = '/api/photos';
-      const params = new URLSearchParams({
+      const params: Record<string, string> = {
         page: page.toString(),
         per_page: '30',
         order_by: filters.orderBy || 'latest',
-      });
+      };
 
       // Use search endpoint if there's a search query
       if (searchQuery) {
         url = '/api/search';
-        params.set('query', searchQuery);
+        params.query = searchQuery;
 
         if (filters.orientation) {
-          params.set('orientation', filters.orientation);
+          params.orientation = filters.orientation;
         }
         if (filters.color) {
-          params.set('color', filters.color);
+          params.color = filters.color;
         }
       }
 
-      const response = await fetch(`${url}?${params.toString()}`);
-      const data = await response.json();
+      // Create cache key for request deduplication
+      const cacheKey = createCacheKey(url, params);
+
+      // Use request cache to deduplicate and cache responses
+      const data = await requestCache.get(
+        cacheKey,
+        async () => {
+          const queryParams = new URLSearchParams(params);
+          const response = await fetch(`${url}?${queryParams.toString()}`);
+          return response.json();
+        },
+        { ttl: 2 * 60 * 1000 } // Cache for 2 minutes
+      );
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch photos');
@@ -77,6 +99,7 @@ export function ImageGallery() {
       setLoading(false);
     }
   }, [
+    showFavoritesOnly,
     isLoading,
     hasMore,
     page,
@@ -130,10 +153,10 @@ export function ImageGallery() {
       )}
 
       {/* Photos Grid - Render based on layout */}
-      {photos.length > 0 && (
+      {displayPhotos.length > 0 && (
         <div className="relative">
           {/* Loading overlay when refreshing */}
-          {isLoading && page === 1 && (
+          {isLoading && page === 1 && !showFavoritesOnly && (
             <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm z-10 flex items-center justify-center">
               <div className="flex flex-col items-center gap-2">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -142,22 +165,22 @@ export function ImageGallery() {
             </div>
           )}
 
-          <div className={isLoading && page === 1 ? 'opacity-30' : ''}>
+          <div className={isLoading && page === 1 && !showFavoritesOnly ? 'opacity-30' : ''}>
             {layout === 'masonry' && (
-              <MasonryGrid photos={photos} onPhotoClick={setSelectedPhoto} />
+              <MasonryGrid photos={displayPhotos} onPhotoClick={setSelectedPhoto} />
             )}
             {layout === 'grid' && (
-              <VirtualGrid photos={photos} onPhotoClick={setSelectedPhoto} />
+              <VirtualGrid photos={displayPhotos} onPhotoClick={setSelectedPhoto} />
             )}
             {layout === 'justified' && (
-              <JustifiedLayout photos={photos} onPhotoClick={setSelectedPhoto} />
+              <JustifiedLayout photos={displayPhotos} onPhotoClick={setSelectedPhoto} />
             )}
           </div>
         </div>
       )}
 
       {/* Loading Skeletons - Only show when no photos */}
-      {isLoading && photos.length === 0 && (
+      {isLoading && displayPhotos.length === 0 && !showFavoritesOnly && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-4">
           {Array.from({ length: 10 }).map((_, i) => (
             <ImageSkeleton key={i} height={200 + Math.random() * 200} />
@@ -166,7 +189,7 @@ export function ImageGallery() {
       )}
 
       {/* Empty State */}
-      {!isLoading && photos.length === 0 && !error && (
+      {!isLoading && displayPhotos.length === 0 && !error && (
         <div className="text-center py-12">
           <svg
             className="mx-auto h-12 w-12 text-gray-400"
@@ -182,16 +205,26 @@ export function ImageGallery() {
             />
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-            No photos found
+            {showFavoritesOnly ? 'No favorites yet' : 'No photos found'}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Try adjusting your search or filters
+            {showFavoritesOnly
+              ? 'Start favoriting photos by clicking the heart icon'
+              : 'Try adjusting your search or filters'}
           </p>
         </div>
       )}
 
+      {/* Infinite Scroll Loading Spinner */}
+      {isLoading && displayPhotos.length > 0 && hasMore && !showFavoritesOnly && (
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">Loading more photos...</p>
+        </div>
+      )}
+
       {/* End of Results */}
-      {!hasMore && photos.length > 0 && (
+      {!hasMore && displayPhotos.length > 0 && !showFavoritesOnly && (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p>You've reached the end!</p>
         </div>

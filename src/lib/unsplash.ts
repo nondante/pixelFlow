@@ -13,8 +13,12 @@ const UNSPLASH_API_URL = 'https://api.unsplash.com';
 const ACCESS_KEY = process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY;
 
 // Rate limiting configuration
+// For development: More lenient limit to avoid blocking during testing
+// For production: Use actual Unsplash limits
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 const RATE_LIMIT = {
-  maxRequests: 50, // Unsplash free tier: 50 requests per hour
+  maxRequests: isDevelopment ? 200 : 50, // Dev: 200/hour, Prod: 50/hour (Unsplash free tier)
   windowMs: 60 * 60 * 1000, // 1 hour
   requests: [] as number[],
 };
@@ -69,6 +73,19 @@ class UnsplashClient {
       const oldestRequest = RATE_LIMIT.requests[0];
       const resetTime = oldestRequest + RATE_LIMIT.windowMs;
       const waitTime = Math.ceil((resetTime - now) / 1000);
+
+      if (isDevelopment) {
+        console.warn(
+          `⚠️ Rate limit reached (${RATE_LIMIT.requests.length}/${RATE_LIMIT.maxRequests}). ` +
+          `Clearing old requests for development...`
+        );
+        // In development, clear old requests more aggressively
+        RATE_LIMIT.requests = RATE_LIMIT.requests.filter(
+          (timestamp) => now - timestamp < 5 * 60 * 1000 // Keep only last 5 minutes
+        );
+        return; // Allow the request to proceed
+      }
+
       throw new Error(
         `Rate limit exceeded. Please try again in ${waitTime} seconds.`
       );
@@ -85,10 +102,17 @@ class UnsplashClient {
   /**
    * Handle API errors
    */
-  private handleError(error: AxiosError<UnsplashError>): Error {
-    if (error.response) {
-      const status = error.response.status;
-      const data = error.response.data;
+  private handleError(error: AxiosError<UnsplashError> | Error): Error {
+    // Handle non-Axios errors (like rate limit errors)
+    if (!(error as AxiosError).isAxiosError) {
+      return error as Error;
+    }
+
+    const axiosError = error as AxiosError<UnsplashError>;
+
+    if (axiosError.response) {
+      const status = axiosError.response.status;
+      const data = axiosError.response.data;
 
       switch (status) {
         case 401:
@@ -108,10 +132,11 @@ class UnsplashClient {
           }
           return new Error(`API error: ${status}`);
       }
-    } else if (error.request) {
+    } else if (axiosError.request) {
       return new Error('Network error. Please check your internet connection.');
     } else {
-      return new Error('An unexpected error occurred');
+      console.error('Unexpected error details:', error);
+      return new Error(`An unexpected error occurred: ${axiosError.message || 'Unknown error'}`);
     }
   }
 

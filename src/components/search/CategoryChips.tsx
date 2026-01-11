@@ -31,24 +31,27 @@ export function CategoryChips() {
   return (
     <div className="w-full">
       <div className="flex flex-wrap gap-2">
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => handleCategoryClick(category.query)}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
-              transition-all transform hover:scale-105
-              ${
-                searchQuery === category.query
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md'
-              }
-            `}
-          >
-            <span className="text-lg">{category.emoji}</span>
-            <span>{category.label}</span>
-          </button>
-        ))}
+        {categories.map((category) => {
+          const isActive = searchQuery === category.query;
+          return (
+            <button
+              key={category.id}
+              onClick={() => handleCategoryClick(category.query)}
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
+                transition-colors duration-200 border
+                ${
+                  isActive
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg border-transparent'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md'
+                }
+              `}
+            >
+              <span className="text-lg">{category.emoji}</span>
+              <span className="whitespace-nowrap">{category.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

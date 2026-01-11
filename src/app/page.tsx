@@ -1,9 +1,13 @@
 import { ImageGallery } from '@/components/gallery/ImageGallery';
+import { ImageModal } from '@/components/gallery/ImageModal';
 import { LayoutSwitcher } from '@/components/layout/LayoutSwitcher';
 import { LayoutInitializer } from '@/components/layout/LayoutInitializer';
 import { SearchBar } from '@/components/search/SearchBar';
 import { CategoryChips } from '@/components/search/CategoryChips';
 import { FilterPanel } from '@/components/search/FilterPanel';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { FavoritesToggle } from '@/components/favorites/FavoritesToggle';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 export default function Home() {
   return (
@@ -23,7 +27,9 @@ export default function Home() {
               </p>
             </div>
             <div className="flex items-center gap-4">
+              <FavoritesToggle />
               <LayoutSwitcher />
+              <ThemeToggle />
               <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                 <svg
                   className="w-4 h-4"
@@ -59,8 +65,13 @@ export default function Home() {
 
       {/* Gallery Content */}
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ImageGallery />
+        <ErrorBoundary>
+          <ImageGallery />
+        </ErrorBoundary>
       </div>
+
+      {/* Image Modal */}
+      <ImageModal />
     </main>
   );
 }

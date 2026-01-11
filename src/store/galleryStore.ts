@@ -13,6 +13,7 @@ interface GalleryStore {
   hasMore: boolean;
   error: string | null;
   page: number;
+  showFavoritesOnly: boolean;
 
   // Actions
   setPhotos: (photos: UnsplashPhoto[]) => void;
@@ -27,6 +28,7 @@ interface GalleryStore {
   incrementPage: () => void;
   resetGallery: () => void;
   resetPage: () => void;
+  setShowFavoritesOnly: (show: boolean) => void;
 }
 
 export const useGalleryStore = create<GalleryStore>((set) => ({
@@ -44,6 +46,7 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
   hasMore: true,
   error: null,
   page: 1,
+  showFavoritesOnly: false,
 
   // Actions
   setPhotos: (photos) => set({ photos }),
@@ -115,7 +118,15 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
       page: 1,
       hasMore: true,
       error: null,
+      showFavoritesOnly: false,
     }),
 
   resetPage: () => set({ page: 1, photos: [], hasMore: true }),
+
+  setShowFavoritesOnly: (show) =>
+    set({
+      showFavoritesOnly: show,
+      page: 1,
+      hasMore: !show, // No pagination for favorites
+    }),
 }));
