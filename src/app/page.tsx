@@ -10,8 +10,10 @@ import { FilterPanel } from '@/components/search/FilterPanel';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { FavoritesToggle } from '@/components/favorites/FavoritesToggle';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { useGalleryStore } from '@/store/galleryStore';
 
 export default function Home() {
+  const { showFavoritesOnly } = useGalleryStore();
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -59,19 +61,21 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Search Section */}
-      <section className="bg-gray-50 dark:bg-gray-900 py-6 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          {/* Search Bar */}
-          <SearchBar />
+      {/* Search Section - Hidden when viewing favorites */}
+      {!showFavoritesOnly && (
+        <section className="bg-gray-50 dark:bg-gray-900 py-6 border-b border-gray-200 dark:border-gray-800">
+          <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            {/* Search Bar */}
+            <SearchBar />
 
-          {/* Category Chips */}
-          <CategoryChips />
-        </div>
-      </section>
+            {/* Category Chips */}
+            <CategoryChips />
+          </div>
+        </section>
+      )}
 
-      {/* Filter Panel */}
-      <FilterPanel />
+      {/* Filter Panel - Hidden when viewing favorites */}
+      {!showFavoritesOnly && <FilterPanel />}
 
       {/* Gallery Content */}
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white dark:bg-gray-950">
