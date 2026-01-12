@@ -14,6 +14,7 @@ interface GalleryStore {
   error: string | null;
   page: number;
   showFavoritesOnly: boolean;
+  hasInitiallyLoaded: boolean;
 
   // Actions
   setPhotos: (photos: UnsplashPhoto[]) => void;
@@ -29,6 +30,7 @@ interface GalleryStore {
   resetGallery: () => void;
   resetPage: () => void;
   setShowFavoritesOnly: (show: boolean) => void;
+  setHasInitiallyLoaded: (hasLoaded: boolean) => void;
 }
 
 export const useGalleryStore = create<GalleryStore>((set) => ({
@@ -47,6 +49,7 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
   error: null,
   page: 1,
   showFavoritesOnly: false,
+  hasInitiallyLoaded: false,
 
   // Actions
   setPhotos: (photos) => set({ photos }),
@@ -86,6 +89,7 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
       page: 1,
       // Don't clear photos - they'll be replaced when new ones load
       hasMore: true,
+      hasInitiallyLoaded: false, // Reset to show loading state
     }),
 
   setFilters: (filters) =>
@@ -94,6 +98,7 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
       page: 1,
       // Don't clear photos - they'll be replaced when new ones load
       hasMore: true,
+      hasInitiallyLoaded: false, // Reset to show loading state
     })),
 
   setSelectedPhoto: (photo) => set({ selectedPhoto: photo }),
@@ -119,9 +124,10 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
       hasMore: true,
       error: null,
       showFavoritesOnly: false,
+      hasInitiallyLoaded: false,
     }),
 
-  resetPage: () => set({ page: 1, photos: [], hasMore: true }),
+  resetPage: () => set({ page: 1, photos: [], hasMore: true, hasInitiallyLoaded: false }),
 
   setShowFavoritesOnly: (show) =>
     set({
@@ -129,4 +135,6 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
       page: 1,
       hasMore: !show, // No pagination for favorites
     }),
+
+  setHasInitiallyLoaded: (hasLoaded) => set({ hasInitiallyLoaded: hasLoaded }),
 }));

@@ -14,6 +14,10 @@ export function MasonryGrid({ photos, onPhotoClick }: MasonryGridProps) {
   const prevPhotosRef = useRef<UnsplashPhoto[]>([]);
   const prevColumnsRef = useRef(columns);
   const [columnArrays, setColumnArrays] = useState<{ photo: UnsplashPhoto; originalIndex: number }[][]>([]);
+  const [hasInitiallyRendered, setHasInitiallyRendered] = useState(false);
+  const stabilityTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const isReady = columnArrays.length > 0 && hasInitiallyRendered;
 
   // Adjust columns based on viewport width
   useEffect(() => {
@@ -55,6 +59,17 @@ export function MasonryGrid({ photos, onPhotoClick }: MasonryGridProps) {
       prevPhotosRef.current = photos;
       prevColumnsRef.current = columns;
       setColumnArrays(cols);
+
+      // Set rendered after initial layout calculation (only on first load)
+      if (!hasInitiallyRendered) {
+        if (stabilityTimeoutRef.current) {
+          clearTimeout(stabilityTimeoutRef.current);
+        }
+        stabilityTimeoutRef.current = setTimeout(() => {
+          setHasInitiallyRendered(true);
+        }, 50);
+      }
+
       return;
     }
 
@@ -107,22 +122,41 @@ export function MasonryGrid({ photos, onPhotoClick }: MasonryGridProps) {
     });
 
     prevPhotosRef.current = photos;
+
+    return () => {
+      if (stabilityTimeoutRef.current) {
+        clearTimeout(stabilityTimeoutRef.current);
+      }
+    };
   }, [photos, columns]);
 
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
-      {columnArrays.map((columnPhotos, columnIndex) => (
-        <div key={columnIndex} className="flex flex-col gap-4">
-          {columnPhotos.map(({ photo, originalIndex }) => (
-            <ImageCard
-              key={photo.id}
-              photo={photo}
-              onClick={onPhotoClick}
-              index={originalIndex}
-            />
-          ))}
+    <>
+      <div
+        className="grid gap-4 w-full"
+        style={{
+          gridTemplateColumns: `repeat(${columns}, 1fr)`,
+          visibility: isReady ? 'visible' : 'hidden',
+        }}
+      >
+        {columnArrays.map((columnPhotos, columnIndex) => (
+          <div key={columnIndex} className="flex flex-col gap-4">
+            {columnPhotos.map(({ photo, originalIndex }) => (
+              <ImageCard
+                key={photo.id}
+                photo={photo}
+                onClick={onPhotoClick}
+                index={originalIndex}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      {!isReady && (
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
         </div>
-      ))}
-    </div>
+      )}
+    </>
   );
 }

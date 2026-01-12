@@ -9,7 +9,7 @@ interface ImageLoaderProps {
   quality?: number;
 }
 
-export function unsplashLoader({ src, width, quality = 75 }: ImageLoaderProps): string {
+export function unsplashLoader({ src, width, quality = 70 }: ImageLoaderProps): string {
   // If it's already a full Unsplash URL, modify it
   if (src.includes('images.unsplash.com')) {
     const url = new URL(src);

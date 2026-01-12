@@ -23,6 +23,15 @@ const RATE_LIMIT = {
   requests: [] as number[],
 };
 
+// API Response Cache
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const API_CACHE = new Map<string, CacheEntry<any>>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 class UnsplashClient {
   private client: AxiosInstance;
 
@@ -100,6 +109,49 @@ class UnsplashClient {
   }
 
   /**
+   * Generate cache key from endpoint and params
+   */
+  private getCacheKey(endpoint: string, params: any): string {
+    return `${endpoint}_${JSON.stringify(params)}`;
+  }
+
+  /**
+   * Get data from cache if available and not expired
+   */
+  private getFromCache<T>(key: string): T | null {
+    const entry = API_CACHE.get(key);
+    if (!entry) return null;
+
+    const now = Date.now();
+    if (now - entry.timestamp > CACHE_DURATION) {
+      API_CACHE.delete(key);
+      return null;
+    }
+
+    return entry.data as T;
+  }
+
+  /**
+   * Save data to cache
+   */
+  private saveToCache<T>(key: string, data: T): void {
+    // Clean old cache entries if cache is too large
+    if (API_CACHE.size > 50) {
+      const now = Date.now();
+      for (const [cacheKey, entry] of API_CACHE.entries()) {
+        if (now - entry.timestamp > CACHE_DURATION) {
+          API_CACHE.delete(cacheKey);
+        }
+      }
+    }
+
+    API_CACHE.set(key, {
+      data,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
    * Handle API errors
    */
   private handleError(error: AxiosError<UnsplashError> | Error): Error {
@@ -141,20 +193,29 @@ class UnsplashClient {
   }
 
   /**
-   * Fetch a list of photos
+   * Fetch a list of photos (with caching)
    */
   async getPhotos(params: FetchPhotosParams = {}): Promise<UnsplashPhoto[]> {
     const { page = 1, per_page = 30, order_by = 'latest' } = params;
+    const cacheKey = this.getCacheKey('/photos', { page, per_page, order_by });
+
+    // Check cache first
+    const cached = this.getFromCache<UnsplashPhoto[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     const response = await this.client.get<UnsplashPhoto[]>('/photos', {
       params: { page, per_page, order_by },
     });
 
+    // Save to cache
+    this.saveToCache(cacheKey, response.data);
     return response.data;
   }
 
   /**
-   * Search for photos
+   * Search for photos (with caching)
    */
   async searchPhotos(params: SearchPhotosParams): Promise<UnsplashSearchResponse> {
     const {
@@ -165,6 +226,21 @@ class UnsplashClient {
       orientation,
       color,
     } = params;
+
+    const cacheKey = this.getCacheKey('/search/photos', {
+      query,
+      page,
+      per_page,
+      order_by,
+      orientation,
+      color,
+    });
+
+    // Check cache first
+    const cached = this.getFromCache<UnsplashSearchResponse>(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     const response = await this.client.get<UnsplashSearchResponse>('/search/photos', {
       params: {
@@ -177,6 +253,8 @@ class UnsplashClient {
       },
     });
 
+    // Save to cache
+    this.saveToCache(cacheKey, response.data);
     return response.data;
   }
 
@@ -264,6 +342,32 @@ class UnsplashClient {
       : 0;
 
     return { remaining, resetsIn };
+  }
+
+  /**
+   * Get cache statistics
+   */
+  getCacheStats(): { size: number; entries: number } {
+    const now = Date.now();
+    let validEntries = 0;
+
+    for (const [key, entry] of API_CACHE.entries()) {
+      if (now - entry.timestamp <= CACHE_DURATION) {
+        validEntries++;
+      }
+    }
+
+    return {
+      size: API_CACHE.size,
+      entries: validEntries,
+    };
+  }
+
+  /**
+   * Clear API cache
+   */
+  clearCache(): void {
+    API_CACHE.clear();
   }
 }
 

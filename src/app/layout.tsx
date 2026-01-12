@@ -24,8 +24,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <head suppressHydrationWarning>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const stored = localStorage.getItem('pixelflow-theme');
+                  if (stored) {
+                    const { state } = JSON.parse(stored);
+                    const theme = state?.theme || 'light';
+
+                    if (theme === 'dark') {
+                      document.documentElement.classList.add('dark');
+                    }
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
         {children}
       </body>
     </html>

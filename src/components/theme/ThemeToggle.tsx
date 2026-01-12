@@ -4,16 +4,17 @@ import { useThemeStore } from '@/store/themeStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function ThemeToggle() {
-  const { theme, resolvedTheme, setTheme } = useThemeStore();
+  const { theme, setTheme, _hasHydrated } = useThemeStore();
+
+  // Don't render until hydrated to prevent hydration mismatch
+  if (!_hasHydrated) {
+    return (
+      <div className="p-2 w-9 h-9 rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse" />
+    );
+  }
 
   const handleToggle = () => {
-    if (theme === 'light') {
-      setTheme('dark');
-    } else if (theme === 'dark') {
-      setTheme('system');
-    } else {
-      setTheme('light');
-    }
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (
@@ -21,18 +22,12 @@ export function ThemeToggle() {
       onClick={handleToggle}
       className="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
       aria-label="Toggle theme"
-      title={
-        theme === 'system'
-          ? 'System theme'
-          : theme === 'dark'
-          ? 'Dark mode'
-          : 'Light mode'
-      }
+      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       <div className="relative w-5 h-5">
         <AnimatePresence mode="wait">
           {/* Sun icon (light mode) */}
-          {resolvedTheme === 'light' && (
+          {theme === 'light' && (
             <motion.svg
               key="sun"
               initial={{ scale: 0, rotate: -90 }}
@@ -54,7 +49,7 @@ export function ThemeToggle() {
           )}
 
           {/* Moon icon (dark mode) */}
-          {resolvedTheme === 'dark' && (
+          {theme === 'dark' && (
             <motion.svg
               key="moon"
               initial={{ scale: 0, rotate: 90 }}
@@ -75,11 +70,6 @@ export function ThemeToggle() {
             </motion.svg>
           )}
         </AnimatePresence>
-
-        {/* System indicator (small dot) */}
-        {theme === 'system' && (
-          <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-blue-500 rounded-full ring-2 ring-white dark:ring-gray-800" />
-        )}
       </div>
     </button>
   );

@@ -21,12 +21,14 @@ export function ImageGallery() {
     searchQuery,
     filters,
     showFavoritesOnly,
+    hasInitiallyLoaded,
     addPhotos,
     setLoading,
     setError,
     setHasMore,
     incrementPage,
     setSelectedPhoto,
+    setHasInitiallyLoaded,
   } = useGalleryStore();
 
   const { favorites } = useFavoritesStore();
@@ -92,9 +94,18 @@ export function ImageGallery() {
         addPhotos(newPhotos);
         incrementPage();
       }
+
+      // Mark as initially loaded after first successful fetch
+      if (!hasInitiallyLoaded) {
+        setHasInitiallyLoaded(true);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       console.error('Error fetching photos:', err);
+      // Mark as initially loaded even on error to show error state instead of spinner
+      if (!hasInitiallyLoaded) {
+        setHasInitiallyLoaded(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -110,6 +121,8 @@ export function ImageGallery() {
     setError,
     setHasMore,
     incrementPage,
+    hasInitiallyLoaded,
+    setHasInitiallyLoaded,
   ]);
 
   // Initial load and reload on search/filter change
@@ -165,7 +178,10 @@ export function ImageGallery() {
             </div>
           )}
 
-          <div className={isLoading && page === 1 && !showFavoritesOnly ? 'opacity-30' : ''}>
+          <div
+            key={layout}
+            className={`transition-opacity duration-300 ${isLoading && page === 1 && !showFavoritesOnly ? 'opacity-30' : ''}`}
+          >
             {layout === 'masonry' && (
               <MasonryGrid photos={displayPhotos} onPhotoClick={setSelectedPhoto} />
             )}
@@ -179,17 +195,19 @@ export function ImageGallery() {
         </div>
       )}
 
-      {/* Loading Skeletons - Only show when no photos */}
-      {isLoading && displayPhotos.length === 0 && !showFavoritesOnly && (
+      {/* Loading Skeletons - Show on initial load or when no photos yet */}
+      {!hasInitiallyLoaded && displayPhotos.length === 0 && !showFavoritesOnly && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-4">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <ImageSkeleton key={i} height={200 + Math.random() * 200} />
-          ))}
+          {Array.from({ length: 10 }).map((_, i) => {
+            // Use deterministic heights based on index to avoid hydration mismatch
+            const heights = [280, 320, 300, 350, 270, 310, 340, 290, 330, 260];
+            return <ImageSkeleton key={i} height={heights[i]} />;
+          })}
         </div>
       )}
 
-      {/* Empty State */}
-      {!isLoading && displayPhotos.length === 0 && !error && (
+      {/* Empty State - Only show after initial load completes */}
+      {hasInitiallyLoaded && !isLoading && displayPhotos.length === 0 && !error && (
         <div className="text-center py-12">
           <svg
             className="mx-auto h-12 w-12 text-gray-400"
