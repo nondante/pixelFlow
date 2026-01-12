@@ -84,22 +84,39 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
   setLayout: (layout) => set({ layout }),
 
   setSearchQuery: (query) =>
-    set({
-      searchQuery: query,
-      page: 1,
-      // Don't clear photos - they'll be replaced when new ones load
-      hasMore: true,
-      hasInitiallyLoaded: false, // Reset to show loading state
+    set((state) => {
+      // Don't reset state if query hasn't actually changed
+      if (state.searchQuery === query) {
+        return state;
+      }
+      return {
+        searchQuery: query,
+        page: 1,
+        // Don't clear photos - they'll be replaced when new ones load
+        hasMore: true,
+        hasInitiallyLoaded: false, // Reset to show loading state
+      };
     }),
 
   setFilters: (filters) =>
-    set((state) => ({
-      filters: { ...state.filters, ...filters },
-      page: 1,
-      // Don't clear photos - they'll be replaced when new ones load
-      hasMore: true,
-      hasInitiallyLoaded: false, // Reset to show loading state
-    })),
+    set((state) => {
+      const newFilters = { ...state.filters, ...filters };
+      // Don't reset state if filters haven't actually changed
+      if (
+        newFilters.orientation === state.filters.orientation &&
+        newFilters.color === state.filters.color &&
+        newFilters.orderBy === state.filters.orderBy
+      ) {
+        return state;
+      }
+      return {
+        filters: newFilters,
+        page: 1,
+        // Don't clear photos - they'll be replaced when new ones load
+        hasMore: true,
+        hasInitiallyLoaded: false, // Reset to show loading state
+      };
+    }),
 
   setSelectedPhoto: (photo) => set({ selectedPhoto: photo }),
 

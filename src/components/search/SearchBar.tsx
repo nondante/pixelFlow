@@ -1,32 +1,49 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useGalleryStore } from '@/store/galleryStore';
 import { useDebounce } from '@/hooks/useDebounce';
 
 export function SearchBar() {
-  const [inputValue, setInputValue] = useState('');
-  const setSearchQuery = useGalleryStore((state) => state.setSearchQuery);
   const currentQuery = useGalleryStore((state) => state.searchQuery);
+  const [inputValue, setInputValue] = useState(currentQuery);
+  const setSearchQuery = useGalleryStore((state) => state.setSearchQuery);
+  const isUserInputRef = useRef(false);
+  const initialQueryRef = useRef(currentQuery);
 
   // Debounce search input (300ms delay)
   const debouncedValue = useDebounce(inputValue, 300);
 
   // Sync input value with store when changed externally (e.g., category click)
   useEffect(() => {
-    if (currentQuery !== inputValue && currentQuery !== debouncedValue) {
-      setInputValue(currentQuery);
+    if (currentQuery !== inputValue) {
+      // Update input only if this wasn't triggered by user typing
+      if (!isUserInputRef.current) {
+        setInputValue(currentQuery);
+      }
     }
-  }, [currentQuery]);
+  }, [currentQuery, inputValue]);
 
-  // Update store when debounced value changes
+  // Update store when debounced value changes from user input
   useEffect(() => {
-    if (debouncedValue !== currentQuery) {
+    // Skip if this is the initial value
+    if (debouncedValue === initialQueryRef.current) {
+      return;
+    }
+
+    // Only update if the value has actually changed and it's from user input
+    if (debouncedValue !== currentQuery && isUserInputRef.current) {
       setSearchQuery(debouncedValue);
     }
   }, [debouncedValue, currentQuery, setSearchQuery]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    isUserInputRef.current = true;
+    setInputValue(e.target.value);
+  };
+
   const handleClear = () => {
+    isUserInputRef.current = true;
     setInputValue('');
     setSearchQuery('');
   };
@@ -54,7 +71,7 @@ export function SearchBar() {
       <input
         type="text"
         value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
+        onChange={handleInputChange}
         placeholder="Search for photos... (nature, architecture, people, etc.)"
         className="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-700 rounded-lg
                    bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100

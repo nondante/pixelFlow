@@ -4,12 +4,10 @@ import { ImageGallery } from '@/components/gallery/ImageGallery';
 import { ImageModal } from '@/components/gallery/ImageModal';
 import { LayoutSwitcher } from '@/components/layout/LayoutSwitcher';
 import { LayoutInitializer } from '@/components/layout/LayoutInitializer';
-import { SearchBar } from '@/components/search/SearchBar';
-import { CategoryChips } from '@/components/search/CategoryChips';
-import { FilterPanel } from '@/components/search/FilterPanel';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { FavoritesToggle } from '@/components/favorites/FavoritesToggle';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { FloatingSearchButton } from '@/components/search/FloatingSearchButton';
 import { useGalleryStore } from '@/store/galleryStore';
 
 export default function Home() {
@@ -61,22 +59,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Search Section - Hidden when viewing favorites */}
-      {!showFavoritesOnly && (
-        <section className="bg-gray-50 dark:bg-gray-900 py-6 border-b border-gray-200 dark:border-gray-800">
-          <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-            {/* Search Bar */}
-            <SearchBar />
-
-            {/* Category Chips */}
-            <CategoryChips />
-          </div>
-        </section>
-      )}
-
-      {/* Filter Panel - Hidden when viewing favorites */}
-      {!showFavoritesOnly && <FilterPanel />}
-
       {/* Gallery Content */}
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-white dark:bg-gray-950">
         <ErrorBoundary>
@@ -86,6 +68,9 @@ export default function Home() {
 
       {/* Image Modal */}
       <ImageModal />
+
+      {/* Floating Search Button - Only show when not viewing favorites */}
+      {!showFavoritesOnly && <FloatingSearchButton />}
     </main>
   );
 }
