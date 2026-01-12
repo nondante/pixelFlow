@@ -86,9 +86,9 @@ export function ImageCard({ photo, onClick, priority = false, index = 0 }: Image
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             loader={unsplashLoader}
-            className={`object-cover transition-opacity duration-500 ease-out ${
+            className={`object-cover transition-all duration-700 ease-out ${
               isLoaded
-                ? 'opacity-100 group-hover:scale-110'
+                ? 'opacity-100 group-hover:scale-105'
                 : 'opacity-0'
             }`}
             onLoadingComplete={() => setIsLoaded(true)}
