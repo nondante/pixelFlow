@@ -263,12 +263,8 @@ export function ImageModal() {
               }}
             >
               {/* BlurHash Placeholder - only show on initial modal open, not during navigation */}
-              {selectedPhoto.blur_hash && isInitialLoad && (
-                <div
-                  className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${
-                    isImageLoaded ? 'opacity-0' : 'opacity-100'
-                  }`}
-                >
+              {selectedPhoto.blur_hash && isInitialLoad && !isImageLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center">
                   <Blurhash
                     hash={selectedPhoto.blur_hash}
                     width="100%"
@@ -294,7 +290,7 @@ export function ImageModal() {
                 alt={selectedPhoto.alt_description || selectedPhoto.description || 'Photo'}
                 fill
                 loader={unsplashLoader}
-                className={`object-contain transition-opacity duration-500 ${
+                className={`object-contain transition-opacity duration-300 ease-out ${
                   isImageLoaded ? 'opacity-100' : 'opacity-0'
                 }`}
                 sizes="2048px"
