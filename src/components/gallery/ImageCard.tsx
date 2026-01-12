@@ -28,31 +28,45 @@ export function ImageCard({ photo, onClick, priority = false, index = 0 }: Image
 
   const shouldLoad = priority || isIntersecting;
 
-  // Stagger animation for initial load - very subtle
-  const staggerDelay = Math.min(index * 0.02, 0.4);
-
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleFavorite(photo);
   };
 
+  // Preload high-res image on hover for instant modal display
+  const handleMouseEnter = () => {
+    if (photo.urls.regular) {
+      import('@/utils/imagePreloader').then(({ imagePreloader }) => {
+        imagePreloader.preload(photo.urls.regular, 2048);
+      });
+    }
+  };
+
+  const handleCardClick = () => {
+    // Preload high-res image immediately when card is clicked (at 2048px to match modal)
+    if (photo.urls.regular) {
+      import('@/utils/imagePreloader').then(({ imagePreloader }) => {
+        imagePreloader.preload(photo.urls.regular, 2048);
+      });
+    }
+    onClick?.(photo);
+  };
+
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: staggerDelay }}
       className="group relative overflow-hidden rounded-lg cursor-pointer bg-gray-200 dark:bg-gray-800"
-      onClick={() => onClick?.(photo)}
+      onClick={handleCardClick}
+      onMouseEnter={handleMouseEnter}
       style={{
         aspectRatio: `${photo.width} / ${photo.height}`,
       }}
     >
       {shouldLoad && (
         <>
-          {/* BlurHash Placeholder */}
-          {!isLoaded && photo.blur_hash && (
-            <div className="absolute inset-0 overflow-hidden">
+          {/* BlurHash Placeholder - Always show until image is loaded */}
+          {photo.blur_hash && (
+            <div className={`absolute inset-0 overflow-hidden transition-opacity duration-300 ${isLoaded ? 'opacity-0' : 'opacity-100'}`}>
               <Blurhash
                 hash={photo.blur_hash}
                 width="100%"
@@ -72,25 +86,11 @@ export function ImageCard({ photo, onClick, priority = false, index = 0 }: Image
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             loader={unsplashLoader}
-            className={`object-cover ${
-              isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-103'
+            className={`object-cover transition-opacity duration-500 ease-out ${
+              isLoaded
+                ? 'opacity-100 group-hover:scale-110'
+                : 'opacity-0'
             }`}
-            style={{
-              transition: isLoaded
-                ? 'transform 600ms cubic-bezier(0.16, 1, 0.3, 1)' // Faster smooth transition on hover
-                : 'opacity 1000ms cubic-bezier(0.16, 1, 0.3, 1), transform 1000ms cubic-bezier(0.16, 1, 0.3, 1)', // Slow gentle load
-              transform: isLoaded ? 'scale(1)' : 'scale(1.03)',
-            }}
-            onMouseEnter={(e) => {
-              if (isLoaded) {
-                (e.target as HTMLImageElement).style.transform = 'scale(1.1)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (isLoaded) {
-                (e.target as HTMLImageElement).style.transform = 'scale(1)';
-              }
-            }}
             onLoadingComplete={() => setIsLoaded(true)}
           />
 
@@ -165,6 +165,6 @@ export function ImageCard({ photo, onClick, priority = false, index = 0 }: Image
           </div>
         </>
       )}
-    </motion.div>
+    </div>
   );
 }

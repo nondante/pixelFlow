@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Blurhash } from 'react-blurhash';
 import { UnsplashPhoto } from '@/types/unsplash';
 import { useGalleryStore } from '@/store/galleryStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
@@ -12,6 +13,8 @@ import { imagePreloader } from '@/utils/imagePreloader';
 export function ImageModal() {
   const { selectedPhoto, photos, showFavoritesOnly, setSelectedPhoto } = useGalleryStore();
   const { isFavorite, toggleFavorite, favorites } = useFavoritesStore();
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Use favorites array when in favorites-only mode, otherwise use photos
   const displayPhotos = showFavoritesOnly ? favorites : photos;
@@ -68,30 +71,48 @@ export function ImageModal() {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
+      // Reset initial load flag when modal closes for next time
+      setIsInitialLoad(true);
     }
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, [selectedPhoto]);
 
-  // Preload adjacent images for smooth navigation
+  // Reset image loaded state when photo changes and immediately preload current image
+  useEffect(() => {
+    setIsImageLoaded(false);
+
+    // Immediately start preloading the current image at 2048px
+    if (selectedPhoto) {
+      imagePreloader.preload(selectedPhoto.urls.regular, 2048);
+    }
+  }, [selectedPhoto?.id]);
+
+  // Aggressive preloading for smooth continuous navigation
+  // Preload 10 images ahead (primary direction) and 3 behind (for back navigation)
   useEffect(() => {
     if (selectedPhoto && currentIndex >= 0) {
       const imagesToPreload: string[] = [];
 
-      // Preload next image
-      if (currentIndex < displayPhotos.length - 1) {
-        imagesToPreload.push(displayPhotos[currentIndex + 1].urls.regular);
+      // Preload next 10 images ahead (aggressive forward preloading for continuous scrolling)
+      for (let i = 1; i <= 10; i++) {
+        if (currentIndex + i < displayPhotos.length) {
+          imagesToPreload.push(displayPhotos[currentIndex + i].urls.regular);
+        }
       }
 
-      // Preload previous image
-      if (currentIndex > 0) {
-        imagesToPreload.push(displayPhotos[currentIndex - 1].urls.regular);
+      // Preload previous 3 images (for back navigation)
+      for (let i = 1; i <= 3; i++) {
+        if (currentIndex - i >= 0) {
+          imagesToPreload.push(displayPhotos[currentIndex - i].urls.regular);
+        }
       }
 
-      // Preload in background
+      // Preload in background at fixed 2048px width to match Next.js Image request
+      // This ensures continuous smooth navigation without spinners even during rapid clicking
       if (imagesToPreload.length > 0) {
-        imagePreloader.preloadMultiple(imagesToPreload);
+        imagePreloader.preloadMultiple(imagesToPreload, 2048);
       }
     }
   }, [selectedPhoto, currentIndex, displayPhotos]);
@@ -241,14 +262,48 @@ export function ImageModal() {
                 }
               }}
             >
+              {/* BlurHash Placeholder - only show on initial modal open, not during navigation */}
+              {selectedPhoto.blur_hash && isInitialLoad && (
+                <div
+                  className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${
+                    isImageLoaded ? 'opacity-0' : 'opacity-100'
+                  }`}
+                >
+                  <Blurhash
+                    hash={selectedPhoto.blur_hash}
+                    width="100%"
+                    height="100%"
+                    resolutionX={32}
+                    resolutionY={32}
+                    punch={1}
+                    className="w-full h-full"
+                  />
+                </div>
+              )}
+
+              {/* Loading spinner - only show on initial modal open, not during navigation */}
+              {!isImageLoaded && isInitialLoad && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                </div>
+              )}
+
+              {/* Main Image */}
               <Image
                 src={selectedPhoto.urls.regular}
                 alt={selectedPhoto.alt_description || selectedPhoto.description || 'Photo'}
                 fill
                 loader={unsplashLoader}
-                className="object-contain"
-                sizes="100vw"
+                className={`object-contain transition-opacity duration-500 ${
+                  isImageLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                sizes="2048px"
                 priority
+                quality={70}
+                onLoadingComplete={() => {
+                  setIsImageLoaded(true);
+                  setIsInitialLoad(false); // No longer initial load after first image loads
+                }}
               />
             </motion.div>
 
