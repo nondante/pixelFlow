@@ -56,7 +56,6 @@ A high-performance, feature-rich image gallery application built with modern web
 - **Progressive Web App (PWA)**
   - Service worker with intelligent caching
   - Offline capability for browsed images
-  - Installable on desktop and mobile
   - CacheFirst strategy for images (7-day cache)
   - NetworkFirst strategy for API (5-minute cache)
 
