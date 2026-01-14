@@ -41,7 +41,6 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
   filters: {
     orientation: null,
     color: null,
-    orderBy: 'relevant',
   },
   selectedPhoto: null,
   isLoading: false,
@@ -104,15 +103,14 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
       // Don't reset state if filters haven't actually changed
       if (
         newFilters.orientation === state.filters.orientation &&
-        newFilters.color === state.filters.color &&
-        newFilters.orderBy === state.filters.orderBy
+        newFilters.color === state.filters.color
       ) {
         return state;
       }
       return {
         filters: newFilters,
         page: 1,
-        // Don't clear photos - they'll be replaced when new ones load
+        photos: [], // Clear photos to force refetch
         hasMore: true,
         hasInitiallyLoaded: false, // Reset to show loading state
       };
@@ -135,7 +133,6 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
       filters: {
         orientation: null,
         color: null,
-        orderBy: 'relevant',
       },
       page: 1,
       hasMore: true,

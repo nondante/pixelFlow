@@ -19,14 +19,12 @@ export function FloatingSearchButton() {
 
   const hasActiveFilters =
     filters.orientation !== null ||
-    filters.color !== null ||
-    filters.orderBy !== 'relevant';
+    filters.color !== null;
 
   const clearFilters = () => {
     setFilters({
       orientation: null,
       color: null,
-      orderBy: 'relevant',
     });
   };
 
@@ -48,11 +46,6 @@ export function FloatingSearchButton() {
     { value: 'green', label: 'Green', color: '#10B981' },
     { value: 'teal', label: 'Teal', color: '#14B8A6' },
     { value: 'blue', label: 'Blue', color: '#3B82F6' },
-  ];
-
-  const sortOptions = [
-    { value: 'relevant', label: 'Relevant' },
-    { value: 'latest', label: 'Latest' },
   ];
 
   return (
@@ -233,31 +226,6 @@ export function FloatingSearchButton() {
                             }}
                           />
                           {color.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Sort Options */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
-                      Sort By
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {sortOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => handleFilterChange('orderBy', option.value)}
-                          className={`
-                            px-4 py-2 rounded-lg text-sm font-medium transition-all
-                            ${
-                              filters.orderBy === option.value
-                                ? 'bg-blue-600 text-white shadow-md'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                            }
-                          `}
-                        >
-                          {option.label}
                         </button>
                       ))}
                     </div>

@@ -54,30 +54,17 @@ export function ImageGallery() {
     setError(null);
 
     try {
-      // Determine if we need to use search API or photos API
-      const hasFilters = filters.color || filters.orientation;
-      const hasSearchQuery = Boolean(searchQuery);
-
-      // Use photos API when no search query and no filters
-      // Otherwise use search API (required for filters and search)
-      const usePhotosApi = !hasSearchQuery && !hasFilters;
-      const url = usePhotosApi ? '/api/photos' : '/api/search';
+      // Use search API with generic query when no search term provided
+      const url = '/api/search';
 
       const params: Record<string, string> = {
         page: page.toString(),
         per_page: '30',
-        // Photos API doesn't support 'relevant', map it to 'latest'
-        order_by: usePhotosApi && filters.orderBy === 'relevant'
-          ? 'latest'
-          : filters.orderBy || 'relevant',
+        order_by: 'latest',
+        query: searchQuery || 'wallpaper',
       };
 
-      // Add query for search API
-      if (!usePhotosApi) {
-        params.query = searchQuery || 'landscape'; // Use 'landscape' as fallback when filters are active
-      }
-
-      // Add filters (only work with search API)
+      // Add filters
       if (filters.orientation) {
         params.orientation = filters.orientation;
       }
@@ -161,7 +148,7 @@ export function ImageGallery() {
       fetchPhotos();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, filters.orientation, filters.color, filters.orderBy]);
+  }, [searchQuery, filters.orientation, filters.color]);
 
   // Setup infinite scroll
   useInfiniteScroll({

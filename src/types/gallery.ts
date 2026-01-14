@@ -7,7 +7,6 @@ export type LayoutType = 'masonry' | 'grid' | 'justified';
 export interface GalleryFilters {
   orientation?: 'landscape' | 'portrait' | 'squarish' | null;
   color?: 'black_and_white' | 'black' | 'white' | 'yellow' | 'orange' | 'red' | 'purple' | 'magenta' | 'green' | 'teal' | 'blue' | null;
-  orderBy?: 'relevant' | 'latest';
 }
 
 // Gallery State
