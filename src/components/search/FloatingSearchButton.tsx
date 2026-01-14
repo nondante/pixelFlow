@@ -20,13 +20,13 @@ export function FloatingSearchButton() {
   const hasActiveFilters =
     filters.orientation !== null ||
     filters.color !== null ||
-    filters.orderBy !== 'latest';
+    filters.orderBy !== 'relevant';
 
   const clearFilters = () => {
     setFilters({
       orientation: null,
       color: null,
-      orderBy: 'latest',
+      orderBy: 'relevant',
     });
   };
 
@@ -51,9 +51,8 @@ export function FloatingSearchButton() {
   ];
 
   const sortOptions = [
+    { value: 'relevant', label: 'Relevant' },
     { value: 'latest', label: 'Latest' },
-    { value: 'popular', label: 'Popular' },
-    { value: 'oldest', label: 'Oldest' },
   ];
 
   return (

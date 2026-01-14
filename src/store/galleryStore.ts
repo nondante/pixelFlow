@@ -41,7 +41,7 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
   filters: {
     orientation: null,
     color: null,
-    orderBy: 'latest',
+    orderBy: 'relevant',
   },
   selectedPhoto: null,
   isLoading: false,
@@ -135,7 +135,7 @@ export const useGalleryStore = create<GalleryStore>((set) => ({
       filters: {
         orientation: null,
         color: null,
-        orderBy: 'latest',
+        orderBy: 'relevant',
       },
       page: 1,
       hasMore: true,

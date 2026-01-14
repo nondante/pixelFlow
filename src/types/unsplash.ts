@@ -100,8 +100,11 @@ export interface FetchPhotosParams {
   order_by?: 'latest' | 'oldest' | 'popular';
 }
 
-export interface SearchPhotosParams extends FetchPhotosParams {
+export interface SearchPhotosParams {
   query: string;
+  page?: number;
+  per_page?: number;
+  order_by?: 'relevant' | 'latest';
   orientation?: 'landscape' | 'portrait' | 'squarish';
   color?: 'black_and_white' | 'black' | 'white' | 'yellow' | 'orange' | 'red' | 'purple' | 'magenta' | 'green' | 'teal' | 'blue';
 }

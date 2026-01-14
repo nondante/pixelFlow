@@ -11,9 +11,19 @@ import { FloatingSearchButton } from '@/components/search/FloatingSearchButton';
 import { useGalleryStore } from '@/store/galleryStore';
 
 export default function Home() {
-  const { showFavoritesOnly } = useGalleryStore();
+  const { showFavoritesOnly, setShowFavoritesOnly } = useGalleryStore();
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleLogoClick = () => {
+    if (showFavoritesOnly) {
+      // If on Favourites page, close favourites and go back to main page
+      setShowFavoritesOnly(false);
+    } else {
+      // Otherwise, scroll to top
+      scrollToTop();
+    }
   };
 
   return (
@@ -25,9 +35,9 @@ export default function Home() {
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <button
-              onClick={scrollToTop}
+              onClick={handleLogoClick}
               className="text-left hover:opacity-80 transition-opacity cursor-pointer"
-              aria-label="Scroll to top"
+              aria-label={showFavoritesOnly ? "Return to main page" : "Scroll to top"}
             >
               <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 PixelFlow

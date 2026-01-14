@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useGalleryStore } from '@/store/galleryStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
@@ -33,6 +33,9 @@ export function ImageGallery() {
 
   const { favorites } = useFavoritesStore();
 
+  // Ref to prevent race conditions when multiple fetches are triggered
+  const isFetchingRef = useRef(false);
+
   // Determine which photos to display
   const displayPhotos = useMemo(() => {
     return showFavoritesOnly ? favorites : photos;
@@ -43,28 +46,43 @@ export function ImageGallery() {
     // Skip API calls if showing favorites
     if (showFavoritesOnly || isLoading || !hasMore) return;
 
+    // Prevent race conditions - don't start a new fetch if one is already in progress
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     setLoading(true);
     setError(null);
 
     try {
-      let url = '/api/photos';
+      // Determine if we need to use search API or photos API
+      const hasFilters = filters.color || filters.orientation;
+      const hasSearchQuery = Boolean(searchQuery);
+
+      // Use photos API when no search query and no filters
+      // Otherwise use search API (required for filters and search)
+      const usePhotosApi = !hasSearchQuery && !hasFilters;
+      const url = usePhotosApi ? '/api/photos' : '/api/search';
+
       const params: Record<string, string> = {
         page: page.toString(),
         per_page: '30',
-        order_by: filters.orderBy || 'latest',
+        // Photos API doesn't support 'relevant', map it to 'latest'
+        order_by: usePhotosApi && filters.orderBy === 'relevant'
+          ? 'latest'
+          : filters.orderBy || 'relevant',
       };
 
-      // Use search endpoint if there's a search query
-      if (searchQuery) {
-        url = '/api/search';
-        params.query = searchQuery;
+      // Add query for search API
+      if (!usePhotosApi) {
+        params.query = searchQuery || 'landscape'; // Use 'landscape' as fallback when filters are active
+      }
 
-        if (filters.orientation) {
-          params.orientation = filters.orientation;
-        }
-        if (filters.color) {
-          params.color = filters.color;
-        }
+      // Add filters (only work with search API)
+      if (filters.orientation) {
+        params.orientation = filters.orientation;
+      }
+      if (filters.color) {
+        params.color = filters.color;
       }
 
       // Create cache key for request deduplication
@@ -114,6 +132,7 @@ export function ImageGallery() {
       }
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   }, [
     showFavoritesOnly,
@@ -133,6 +152,9 @@ export function ImageGallery() {
 
   // Initial load and reload on search/filter change
   useEffect(() => {
+    // Reset fetching flag when search or filters change to allow fresh fetches
+    isFetchingRef.current = false;
+
     // Trigger fetch when search or filters change
     // Always fetch when page is 1 (new search/filter)
     if (page === 1) {

@@ -18,6 +18,7 @@ export function useInfiniteScroll({
   onLoadMore,
 }: UseInfiniteScrollOptions): void {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(false);
 
   const handleScroll = useCallback(() => {
     // Clear existing timeout
@@ -47,8 +48,13 @@ export function useInfiniteScroll({
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    // Initial check in case content doesn't fill viewport
-    handleScroll();
+    // Only do initial check on first mount, not on every handleScroll change
+    // This prevents duplicate fetches when search/filters change
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      // Delay initial check to allow other effects to run first
+      setTimeout(() => handleScroll(), 100);
+    }
 
     return () => {
       window.removeEventListener('scroll', handleScroll);

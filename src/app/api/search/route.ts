@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     const perPage = parseInt(searchParams.get('per_page') || '30');
     const orientation = searchParams.get('orientation') as 'landscape' | 'portrait' | 'squarish' | undefined;
     const color = searchParams.get('color') as string | undefined;
+    const orderBy = (searchParams.get('order_by') as 'relevant' | 'latest') || 'relevant';
 
     const result = await unsplashClient.searchPhotos({
       query,
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
       per_page: perPage,
       orientation,
       color: color as any,
+      order_by: orderBy,
     });
 
     return NextResponse.json({
